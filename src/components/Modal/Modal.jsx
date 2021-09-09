@@ -32,6 +32,5 @@ function Modal({ url, onClose }) {
 Modal.propTypes = {
   onClick: PropTypes.func.isRequired,
   scr: PropTypes.string.isRequired,
-  name: PropTypes.string.isRequired,
 };
 export default Modal;

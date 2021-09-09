@@ -28,20 +28,6 @@ function ImageGallery({ searchQuery, onClick }) {
   const [perPage] = useState(12);
   const [status, setStatus] = useState(STATUS.idle);
 
-  // const fetchData = (page = 1) => {
-  //   setStatus(STATUS.pending);
-  //   return fetch(
-  //     `${BASE_URL}&q=${searchQuery}&per_page=${perPage}&page=${page}`,
-  //   )
-  //     .then(r => r.json())
-  //     .then(data => {
-  //       if (data.hits.length === 0) {
-  //         throw new Error(`Немає фото за пошуковим запитом "${searchQuery}"`);
-  //       } else {
-  //         return data;
-  //       }
-  //     });
-  // };
   const fetchCallBack = useCallback(
     (page = 1) => {
       setStatus(STATUS.pending);
@@ -99,7 +85,6 @@ function ImageGallery({ searchQuery, onClick }) {
 
   const loadMoreClickHandler = () => {
     setPage(prevState => prevState + 1);
-    console.log(page);
   };
 
   if (status === STATUS.idle) {
