@@ -1,50 +1,43 @@
 import 'react-loader-spinner/dist/loader/css/react-spinner-loader.css';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
-import React, { Component } from 'react';
+import React, { useState } from 'react';
 import Searchbar from './components/Searchbar/Searchbar';
 import ImageGallery from './components/ImageGallery/ImageGallery';
 import Modal from './components/Modal/Modal';
 import { ToastContainer } from 'react-toastify';
 
-export class App extends Component {
-  state = {
-    searchQuery: '',
-    showModal: false,
-    url: '',
+function App() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [url, setUrl] = useState('');
+
+  const onSubmitHandler = searchQuery => {
+    setSearchQuery(searchQuery);
+  };
+  const onCloseHandler = url => {
+    setShowModal(showModal => !showModal);
+    setUrl(url);
   };
 
-  onSubmitHandler = searchQuery => {
-    this.setState({ searchQuery });
-  };
-  onCloseHandler = url => {
-    this.setState(({ showModal }) => ({ showModal: !showModal, url: url }));
-  };
-  render() {
-    return (
-      <>
-        <Searchbar onSubmit={this.onSubmitHandler} />
-        <ImageGallery
-          searchQuery={this.state.searchQuery}
-          onClick={this.onCloseHandler}
-        />
-        {this.state.showModal && (
-          <Modal url={this.state.url} onClose={this.onCloseHandler} />
-        )}
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-        />
-      </>
-    );
-  }
+  return (
+    <>
+      <Searchbar onSubmit={onSubmitHandler} />
+      <ImageGallery searchQuery={searchQuery} onClick={onCloseHandler} />
+      {showModal && <Modal url={url} onClose={onCloseHandler} />}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+    </>
+  );
 }
 
 export default App;
