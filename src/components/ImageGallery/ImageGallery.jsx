@@ -1,5 +1,5 @@
 import Loader from 'react-loader-spinner';
-import React, { Component } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import ImageGalleryItem from '../ImageGalleryItem/ImageGalleryItem';
 import Button from '../Button/Button';
@@ -22,113 +22,122 @@ const options = {
   draggable: true,
   progress: undefined,
 };
-export class ImageGallery extends Component {
-  static propTypes = { searchQuery: PropTypes.string };
-  state = {
-    images: [],
-    page: 1,
-    perPage: 12,
-    status: STATUS.idle,
-    error: null,
-  };
-  componentDidUpdate(prevProps, prevState) {
-    if (prevProps.searchQuery !== this.props.searchQuery) {
-      this.fetchData()
-        .then(data =>
-          this.setState({
-            images: [...data.hits],
-            page: 1,
-            status: STATUS.resolved,
-          }),
-        )
-        .catch(error => {
-          this.setState({ status: STATUS.rejected, error });
-          toast.error(`${error.message}`, options);
+function ImageGallery({ searchQuery, onClick }) {
+  const [images, setImage] = useState([]);
+  const [page, setPage] = useState(1);
+  const [perPage] = useState(12);
+  const [status, setStatus] = useState(STATUS.idle);
+
+  // const fetchData = (page = 1) => {
+  //   setStatus(STATUS.pending);
+  //   return fetch(
+  //     `${BASE_URL}&q=${searchQuery}&per_page=${perPage}&page=${page}`,
+  //   )
+  //     .then(r => r.json())
+  //     .then(data => {
+  //       if (data.hits.length === 0) {
+  //         throw new Error(`Немає фото за пошуковим запитом "${searchQuery}"`);
+  //       } else {
+  //         return data;
+  //       }
+  //     });
+  // };
+  const fetchCallBack = useCallback(
+    (page = 1) => {
+      setStatus(STATUS.pending);
+      return fetch(
+        `${BASE_URL}&q=${searchQuery}&per_page=${perPage}&page=${page}`,
+      )
+        .then(r => r.json())
+        .then(data => {
+          if (data.hits.length === 0) {
+            throw new Error(`Немає фото за пошуковим запитом "${searchQuery}"`);
+          } else {
+            return data;
+          }
+        });
+    },
+    [perPage, searchQuery],
+  );
+
+  useEffect(() => {
+    if (searchQuery !== '') {
+      fetchCallBack()
+        .then(data => {
+          setImage([...data.hits]);
+          setPage(1);
+          setStatus(STATUS.resolved);
+        })
+        .catch(errorCatch => {
+          setStatus(STATUS.rejected);
+          toast.error(`${errorCatch.message}`, options);
         });
     }
-    if (
-      prevState.page !== this.state.page &&
-      this.state.page > 1 &&
-      prevProps.searchQuery === this.props.searchQuery
-    ) {
-      this.fetchData(this.state.page)
-        .then(data =>
-          this.setState({
-            images: [...prevState.images, ...data.hits],
-            status: STATUS.resolved,
-          }),
-        )
+  }, [searchQuery, fetchCallBack]);
+
+  useEffect(() => {
+    if (page > 1) {
+      fetchCallBack(page)
+        .then(data => {
+          setImage(prevState => {
+            return [...prevState, ...data.hits];
+          });
+          setStatus(STATUS.resolved);
+        })
         .then(() => {
           window.scrollTo({
             top: document.documentElement.scrollHeight,
             behavior: 'smooth',
           });
         })
-        .catch(error => {
-          this.setState({ status: STATUS.rejected, error });
-          toast.error(`${error.message}`, options);
+        .catch(errorCatch => {
+          setStatus(STATUS.rejected);
+          toast.error(`${errorCatch.message}`, options);
         });
     }
+  }, [page, searchQuery, fetchCallBack]);
+
+  const loadMoreClickHandler = () => {
+    setPage(prevState => prevState + 1);
+    console.log(page);
+  };
+
+  if (status === STATUS.idle) {
+    return <h2 className={'title'}>Введіть пошуковий запит</h2>;
   }
-  fetchData = (page = 1) => {
-    const { perPage } = this.state;
-    const { searchQuery } = this.props;
-    this.setState({ status: STATUS.pending });
-    return fetch(
-      `${BASE_URL}&q=${searchQuery}&per_page=${perPage}&page=${page}`,
-    )
-      .then(r => r.json())
-      .then(data => {
-        if (data.hits.length === 0) {
-          throw new Error(`Немає фото за пошуковим запитом "${searchQuery}"`);
-        } else {
-          return data;
-        }
-      });
-  };
-
-  loadMoreClickHandler = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
-  };
-  render() {
-    const { status } = this.state;
-
-    if (status === STATUS.idle) {
-      return <h2 className={'title'}>Введіть пошуковий запит</h2>;
-    }
-    if (status === STATUS.pending) {
-      return (
-        <div className="loaderWrapper">
-          <Loader type="ThreeDots" color="#00BFFF" height={100} width={100} />
+  if (status === STATUS.pending) {
+    return (
+      <div className="loaderWrapper">
+        <Loader type="ThreeDots" color="#00BFFF" height={100} width={100} />
+      </div>
+    );
+  }
+  if (status === STATUS.rejected) {
+    setTimeout(() => {
+      setStatus(STATUS.idle);
+    }, 5000);
+    return <></>;
+  }
+  if (status === STATUS.resolved) {
+    return (
+      <>
+        <ul className="ImageGallery">
+          {images.map(image => (
+            <ImageGalleryItem
+              key={image.id}
+              src={image.webformatURL}
+              largeImg={image.largeImageURL}
+              onClick={onClick}
+            />
+          ))}
+        </ul>
+        <div className="buttonWrapper">
+          <Button onClick={loadMoreClickHandler}>Load more</Button>
         </div>
-      );
-    }
-    if (status === STATUS.rejected) {
-      setTimeout(() => {
-        this.setState({ status: STATUS.idle });
-      }, 5000);
-      return <></>;
-    }
-    if (status === STATUS.resolved) {
-      return (
-        <>
-          <ul className="ImageGallery">
-            {this.state.images.map(image => (
-              <ImageGalleryItem
-                key={image.id}
-                src={image.webformatURL}
-                largeImg={image.largeImageURL}
-                onClick={this.props.onClick}
-              />
-            ))}
-          </ul>
-          <div className="buttonWrapper">
-            <Button onClick={this.loadMoreClickHandler}>Load more</Button>
-          </div>
-        </>
-      );
-    }
+      </>
+    );
   }
 }
 
+ImageGallery.propTypes = { searchQuery: PropTypes.string };
 export default ImageGallery;
